@@ -1,0 +1,66 @@
+name: Full DevOps CI/CD
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+
+  build-test-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    # Node Setup
+    - name: Setup Node
+      uses: actions/setup-node@v4
+      with:
+        node-version: 20
+
+    - run: npm install
+    - run: npm run build
+
+    # SonarQube Scan
+    - name: SonarQube Scan
+      uses: sonarsource/sonarqube-scan-action@v2
+      env:
+        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+
+    # Docker Build
+    - name: Build Docker Image
+      run: docker build -t react-devops .
+
+    # AWS Login
+    - name: Configure AWS
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ap-south-1
+
+    # Login ECR
+    - name: Login to ECR
+      run: |
+        aws ecr get-login-password --region ap-south-1 | \
+        docker login --username AWS --password-stdin ${{ secrets.ACCOUNT_ID }}.dkr.ecr.ap-south-1.amazonaws.com
+
+    - name: Tag Image
+      run: |
+        docker tag react-devops:latest \
+        ${{ secrets.ACCOUNT_ID }}.dkr.ecr.ap-south-1.amazonaws.com/react-devops:latest
+
+    - name: Push Image
+      run: |
+        docker push \
+        ${{ secrets.ACCOUNT_ID }}.dkr.ecr.ap-south-1.amazonaws.com/react-devops:latest
+
+    # Terraform Deploy
+    - name: Terraform Init
+      run: terraform init
+
+    - name: Terraform Apply
+      run: terraform apply -auto-approve
