@@ -26,6 +26,8 @@ jobs:
     # SonarQube Scan
     - name: SonarQube Scan
       uses: sonarsource/sonarqube-scan-action@v2
+      with:
+        projectBaseDir: .
       env:
         SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
@@ -43,20 +45,20 @@ jobs:
         aws-region: ap-south-1
 
     # Login ECR
-    - name: Login to ECR
-      run: |
-        aws ecr get-login-password --region ap-south-1 | \
-        docker login --username AWS --password-stdin ${{ secrets.ACCOUNT_ID }}.dkr.ecr.ap-south-1.amazonaws.com
+    # - name: Login to ECR
+    #   run: |
+    #     aws ecr get-login-password --region ap-south-1 | \
+    #     docker login --username AWS --password-stdin ${{ secrets.ACCOUNT_ID }}.dkr.ecr.ap-south-1.amazonaws.com
 
-    - name: Tag Image
-      run: |
-        docker tag react-devops:latest \
-        ${{ secrets.ACCOUNT_ID }}.dkr.ecr.ap-south-1.amazonaws.com/react-devops:latest
+    # - name: Tag Image
+    #   run: |
+    #     docker tag react-devops:latest \
+    #     ${{ secrets.ACCOUNT_ID }}.dkr.ecr.ap-south-1.amazonaws.com/react-devops:latest
 
-    - name: Push Image
-      run: |
-        docker push \
-        ${{ secrets.ACCOUNT_ID }}.dkr.ecr.ap-south-1.amazonaws.com/react-devops:latest
+    # - name: Push Image
+    #   run: |
+    #     docker push \
+    #     ${{ secrets.ACCOUNT_ID }}.dkr.ecr.ap-south-1.amazonaws.com/react-devops:latest
 
     # Terraform Deploy
     - name: Terraform Init
